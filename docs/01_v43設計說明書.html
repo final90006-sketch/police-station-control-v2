@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>派出所綜合管制系統 v43 — 設計邏輯說明書</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --accent: #1f4e79;
+    --accent-light: #dbeafe;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --danger: #b91c1c;
+    --danger-bg: #fee2e2;
+    --pass: #15803d;
+    --pass-bg: #dcfce7;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    font-size: 15px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  nav {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+  }
+  nav h1 {
+    font-size: 15px;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  nav .subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 16px;
+  }
+  nav ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: section;
+  }
+  nav ol li {
+    counter-increment: section;
+    margin: 4px 0;
+  }
+  nav ol li::before {
+    content: counter(section) ". ";
+    color: var(--muted);
+  }
+  nav a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  nav a:hover {
+    color: var(--accent);
+  }
+  main {
+    padding: 32px 48px;
+    max-width: 1100px;
+  }
+  header.title {
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 16px;
+    margin-bottom: 32px;
+  }
+  header.title h1 {
+    font-size: 32px;
+    margin: 0 0 8px;
+    color: var(--accent);
+  }
+  header.title .meta {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  section {
+    margin: 48px 0;
+    scroll-margin-top: 20px;
+  }
+  section h2 {
+    font-size: 24px;
+    color: var(--accent);
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent-light);
+  }
+  section h3 {
+    font-size: 18px;
+    margin-top: 32px;
+    color: var(--text);
+  }
+  section h4 {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--accent);
+    color: white;
+    text-align: left;
+    padding: 8px 12px;
+    font-weight: 500;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:hover td {
+    background: var(--accent-light);
+  }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #be185d;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-pass { background: var(--pass-bg); color: var(--pass); }
+  .badge-warn { background: var(--warn-bg); color: var(--warn); }
+  .badge-fail { background: var(--danger-bg); color: var(--danger); }
+  .badge-info { background: var(--accent-light); color: var(--accent); }
+  .note {
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+  .warn-box {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+  .danger-box {
+    background: var(--danger-bg);
+    border-left: 4px solid var(--danger);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .card h4 {
+    margin-top: 0;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  @media print {
+    .layout { grid-template-columns: 1fr; }
+    nav { display: none; }
+    main { padding: 0; max-width: 100%; }
+    section { page-break-inside: avoid; }
+    table { font-size: 11px; }
+    pre { font-size: 10px; }
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 16px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav>
+  <h1>派出所綜合管制系統</h1>
+  <div class="subtitle">v43 設計說明書</div>
+  <ol>
+    <li><a href="#overview">系統概覽</a></li>
+    <li><a href="#design-philosophy">設計哲學</a></li>
+    <li><a href="#data-model">資料模型</a></li>
+    <li><a href="#sheets">14 個分頁</a></li>
+    <li><a href="#named-ranges">命名範圍</a></li>
+    <li><a href="#kpi-formulas">核心 KPI 公式</a></li>
+    <li><a href="#data-validations">資料驗證</a></li>
+    <li><a href="#conditional-formatting">條件格式</a></li>
+    <li><a href="#system-check">33 條檢核規則</a></li>
+    <li><a href="#workflow">工作流程</a></li>
+    <li><a href="#ui-spec">UI 視覺規範</a></li>
+    <li><a href="#constraints">限制與決策</a></li>
+    <li><a href="#redesign">重做建議</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>派出所綜合管制系統 v43</h1>
+  <h2 style="border:0; padding:0; margin: 0 0 8px; color: var(--muted); font-size: 18px; font-weight: 400;">設計邏輯說明書</h2>
+  <div class="meta">
+    版本：v43 (macro-free, Plan B)　｜　目的：派出所綜合管制系統，全國通用範本<br>
+    產出日期：2026-05-23　｜　用途：給未來重做系統時當設計參考
+  </div>
+</header>
+
+<section id="overview">
+  <h2>1. 系統概覽</h2>
+  <p>本系統是<strong>派出所層級的綜合勤務管制與績效追蹤</strong>工具，以 Excel 工作簿型式提供，目標是讓基層員警可單機操作、長官可一目了然檢視全所管制狀態。</p>
+  <div class="grid-2">
+    <div class="card">
+      <h4>三大管制領域</h4>
+      <ul>
+        <li><strong>刑案管制</strong>：未破/已破未移送/竊盜/詐欺/發展中</li>
+        <li><strong>毒品調驗</strong>：列管人口與到驗管制</li>
+        <li><strong>交通績效</strong>：違規項目目標達成率</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>資料規模</h4>
+      <ul>
+        <li>案件容量：500 列硬上限（規則 33 預警）</li>
+        <li>毒調/交通/發展中容量：各 150 列</li>
+        <li>共計 26,465 個公式、33 條自動檢核規則、6 個 Excel Table</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="design-philosophy">
+  <h2>2. 設計哲學</h2>
+  <h3>2.1 Single Source of Truth</h3>
+  <p>所有刑案資料只在 <code>案件資料庫</code> 一張表編輯，其他分頁透過 <code>INDEX/MATCH</code> 公式自動同步。</p>
+  <h3>2.2 公式驅動，非巨集</h3>
+  <p>v43 是 <strong>macro-free Plan B</strong>。原 v42 巨集版維運成本過高（全國機關鎖巨集、需重簽 vbaProject），改用純公式達成同樣功能。</p>
+  <h3>2.3 自動健檢</h3>
+  <p>系統自帶 33 條檢核規則，使用者打開檔案自動掃描資料一致性、公式運作、設定完整性，分綠/橙/紅三色顯示。</p>
+  <h3>2.4 多層級可見性</h3>
+  <p>透過 outline 折疊讓長官一眼看 50 列、稽核人員可展開全部 500 列。列印區段化只印可見列。</p>
+  <h3>2.5 中文 sidecar 強制規範</h3>
+  <p>所有自動化腳本 (.ps1) 必須是純 ASCII，中文一律走 UTF-8 sidecar 載入。<strong>原因：PS5.1 以 ANSI 讀 .ps1 會毀中文字面值。</strong>這是本專案反覆踩過的關鍵雷。</p>
+</section>
+
+<section id="data-model">
+  <h2>3. 資料模型</h2>
+  <p>系統共有 6 個 Excel Table + 2 個輔助 Table，分別承載不同管制領域：</p>
+  <h3>Tbl案件 <span class="badge badge-info">案件資料庫 B13:Y501</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>編號</code></td></tr>    <tr><td>2</td><td><code>案類</code></td></tr>    <tr><td>3</td><td><code>E化案號</code></td></tr>    <tr><td>4</td><td><code>發生時間</code></td></tr>    <tr><td>5</td><td><code>發生地點</code></td></tr>    <tr><td>6</td><td><code>破獲時間</code></td></tr>    <tr><td>7</td><td><code>破獲地點</code></td></tr>    <tr><td>8</td><td><code>案情摘要</code></td></tr>    <tr><td>9</td><td><code>偵辦進度</code></td></tr>    <tr><td>10</td><td><code>案件狀況</code></td></tr>    <tr><td>11</td><td><code>發生管轄</code></td></tr>    <tr><td>12</td><td><code>查獲管轄</code></td></tr>    <tr><td>13</td><td><code>承辦人</code></td></tr>    <tr><td>14</td><td><code>備註</code></td></tr>    <tr><td>15</td><td><code>建立時間</code></td></tr>    <tr><td>16</td><td><code>建立者</code></td></tr>    <tr><td>17</td><td><code>是否破獲</code></td></tr>    <tr><td>18</td><td><code>歸屬年度</code></td></tr>    <tr><td>19</td><td><code>未破排序</code></td></tr>    <tr><td>20</td><td><code>已破未移送排序</code></td></tr>    <tr><td>21</td><td><code>竊盜未結排序</code></td></tr>    <tr><td>22</td><td><code>竊盜已結排序</code></td></tr>    <tr><td>23</td><td><code>詐欺未結排序</code></td></tr>    <tr><td>24</td><td><code>詐欺已結排序</code></td></tr>  </table>  <h3>Tbl發展中 <span class="badge badge-info">發展中案件管制 B14:G164</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>編號</code></td></tr>    <tr><td>2</td><td><code>案由</code></td></tr>    <tr><td>3</td><td><code>進度</code></td></tr>    <tr><td>4</td><td><code>執行時間</code></td></tr>    <tr><td>5</td><td><code>查緝結果</code></td></tr>    <tr><td>6</td><td><code>備註</code></td></tr>  </table>  <h3>Tbl毒調 <span class="badge badge-info">毒品調驗人口管制 B14:J164</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>編號</code></td></tr>    <tr><td>2</td><td><code>姓名</code></td></tr>    <tr><td>3</td><td><code>身分證字號</code></td></tr>    <tr><td>4</td><td><code>性別</code></td></tr>    <tr><td>5</td><td><code>住所</code></td></tr>    <tr><td>6</td><td><code>聯繫方式</code></td></tr>    <tr><td>7</td><td><code>通緝</code></td></tr>    <tr><td>8</td><td><code>管制情形</code></td></tr>    <tr><td>9</td><td><code>備註</code></td></tr>  </table>  <h3>Tbl交通 <span class="badge badge-info">交通績效管制 B43:G193</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>編號</code></td></tr>    <tr><td>2</td><td><code>取締日期</code></td></tr>    <tr><td>3</td><td><code>違規項目</code></td></tr>    <tr><td>4</td><td><code>舉發單號</code></td></tr>    <tr><td>5</td><td><code>取締員警</code></td></tr>    <tr><td>6</td><td><code>備註</code></td></tr>  </table>  <h3>Tbl刑案 <span class="badge badge-info">績效統計 B53:I203</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>編號</code></td></tr>    <tr><td>2</td><td><code>案類</code></td></tr>    <tr><td>3</td><td><code>破獲時間</code></td></tr>    <tr><td>4</td><td><code>破獲地點</code></td></tr>    <tr><td>5</td><td><code>案情摘要</code></td></tr>    <tr><td>6</td><td><code>有無發展性</code></td></tr>    <tr><td>7</td><td><code>承辦人</code></td></tr>    <tr><td>8</td><td><code>備註</code></td></tr>  </table>  <h3>設定_員警 <span class="badge badge-info">設定表 B23:H84</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>員警編號</code></td></tr>    <tr><td>2</td><td><code>姓名</code></td></tr>    <tr><td>3</td><td><code>職稱</code></td></tr>    <tr><td>4</td><td><code>是否在職</code></td></tr>    <tr><td>5</td><td><code>是否納入統計</code></td></tr>    <tr><td>6</td><td><code>排序</code></td></tr>    <tr><td>7</td><td><code>備註</code></td></tr>  </table>  <h3>設定_案類 <span class="badge badge-info">設定表 B87:F154</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>案類代碼</code></td></tr>    <tr><td>2</td><td><code>案類名稱</code></td></tr>    <tr><td>3</td><td><code>納入全般統計</code></td></tr>    <tr><td>4</td><td><code>納入破獲率</code></td></tr>    <tr><td>5</td><td><code>備註</code></td></tr>  </table>  <h3>Tbl歷史 <span class="badge badge-info">歷史資料 B15:O135</span></h3>  <table><tr><th>#</th><th>欄位名稱</th></tr>    <tr><td>1</td><td><code>統計年月</code></td></tr>    <tr><td>2</td><td><code>全般發生</code></td></tr>    <tr><td>3</td><td><code>全般未破</code></td></tr>    <tr><td>4</td><td><code>全般破獲</code></td></tr>    <tr><td>5</td><td><code>破獲率</code></td></tr>    <tr><td>6</td><td><code>竊盜</code></td></tr>    <tr><td>7</td><td><code>詐欺</code></td></tr>    <tr><td>8</td><td><code>已破未送</code></td></tr>    <tr><td>9</td><td><code>發展中</code></td></tr>    <tr><td>10</td><td><code>毒調率</code></td></tr>    <tr><td>11</td><td><code>未到驗</code></td></tr>    <tr><td>12</td><td><code>交通</code></td></tr>    <tr><td>13</td><td><code>員警冠軍</code></td></tr>    <tr><td>14</td><td><code>備註</code></td></tr>  </table>
+</section>
+
+<section id="sheets">
+  <h2>4. 14 個分頁明細</h2>
+  <p>每張表的職責、規模、技術屬性如下：</p>
+  <table>
+    <tr>
+      <th>#</th><th>分頁名稱</th><th>用途</th><th>規模</th><th>凍結</th><th>保護</th>
+    </tr>
+    <tr><td>1</td><td><strong>首頁_操作說明</strong></td><td>首頁／使用指南／系統概覽</td>    <td>41列 × 14欄</td>    <td>A2</td>    <td></td></tr>    <tr><td>2</td><td><strong>管制總覽</strong></td><td>高階儀表板（刑案/毒調/交通 KPI 統整）</td>    <td>111列 × 28欄</td>    <td>A8</td>    <td></td></tr>    <tr><td>3</td><td><strong>案件輸入</strong></td><td>案件登錄表單（v43 無巨集後僅供參考用，無法自動寫入）</td>    <td>38列 × 6欄</td>    <td>A2</td>    <td></td></tr>    <tr><td>4</td><td><strong>案件資料庫</strong></td><td>案件資料源（Tbl案件，本系統 single source of truth）</td>    <td>504列 × 26欄</td>    <td>A14</td>    <td><span class="badge badge-warn">已保護</span></td></tr>    <tr><td>5</td><td><strong>未破案件管制</strong></td><td>未破案件清單 + 已破未移送清單</td>    <td>806列 × 10欄</td>    <td>A16</td>    <td></td></tr>    <tr><td>6</td><td><strong>竊盜案件管制</strong></td><td>未結案竊盜 + 已結案竊盜</td>    <td>808列 × 12欄</td>    <td>A18</td>    <td></td></tr>    <tr><td>7</td><td><strong>發展中案件管制</strong></td><td>發展中案件登記表（獨立資料源 Tbl發展中）</td>    <td>167列 × 8欄</td>    <td>A14</td>    <td></td></tr>    <tr><td>8</td><td><strong>詐欺案件管制</strong></td><td>未結案詐欺 + 已結案詐欺</td>    <td>808列 × 12欄</td>    <td>A18</td>    <td></td></tr>    <tr><td>9</td><td><strong>毒品調驗人口管制</strong></td><td>毒品列管人口（獨立資料源 Tbl毒調）</td>    <td>167列 × 11欄</td>    <td>A14</td>    <td></td></tr>    <tr><td>10</td><td><strong>交通績效管制</strong></td><td>交通違規目標達成率 + 案件登錄</td>    <td>196列 × 8欄</td>    <td>A14</td>    <td></td></tr>    <tr><td>11</td><td><strong>績效統計</strong></td><td>刑案績效分類統計 + 員警佔比</td>    <td>206列 × 9欄</td>    <td>A14</td>    <td></td></tr>    <tr><td>12</td><td><strong>設定表</strong></td><td>派出所名稱、員警名冊、案類清單、目標值等系統設定</td>    <td>288列 × 9欄</td>    <td>A4</td>    <td></td></tr>    <tr><td>13</td><td><strong>歷史資料</strong></td><td>月份快照儲存表（含本月即時 KPI 抄寫指引）</td>    <td>140列 × 16欄</td>    <td>A10</td>    <td></td></tr>    <tr><td>14</td><td><strong>系統檢核</strong></td><td>33 條規則自動健檢</td>    <td>46列 × 8欄</td>    <td>A6</td>    <td></td></tr>  </table>
+</section>
+
+<section id="named-ranges">
+  <h2>5. 命名範圍（Named Ranges）</h2>
+  <p>系統用命名範圍封裝清單與動態範圍，供下拉選單與公式參照：</p>
+  <table>
+    <tr><th>名稱</th><th>參照</th></tr>
+    <tr><td><code>日清單</code></td><td><code>設定表!$E$176:INDEX(設定表!$E$176:$E$206,COUNTA(設定表!$E$176:$E$206))</code></td></tr>    <tr><td><code>月清單</code></td><td><code>設定表!$D$176:INDEX(設定表!$D$176:$D$206,COUNTA(設定表!$D$176:$D$206))</code></td></tr>    <tr><td><code>民國年清單</code></td><td><code>設定表!$C$176:INDEX(設定表!$C$176:$C$206,COUNTA(設定表!$C$176:$C$206))</code></td></tr>    <tr><td><code>交通處置清單</code></td><td><code>設定表!$H$239:INDEX(設定表!$H$239:$H$254,COUNTA(設定表!$H$239:$H$254))</code></td></tr>    <tr><td><code>刑案案類分類</code></td><td><code>設定表!$G$259:INDEX(設定表!$G$259:$G$279,COUNTA(設定表!$B$259:$B$279))</code></td></tr>    <tr><td><code>刑案案類清單</code></td><td><code>設定表!$B$259:INDEX(設定表!$B$259:$B$279,COUNTA(設定表!$B$259:$B$279))</code></td></tr>    <tr><td><code>有無發展性清單</code></td><td><code>設定表!$B$283:INDEX(設定表!$B$283:$B$284,COUNTA(設定表!$B$283:$B$284))</code></td></tr>    <tr><td><code>西元年清單</code></td><td><code>設定表!$B$176:INDEX(設定表!$B$176:$B$206,COUNTA(設定表!$B$176:$B$206))</code></td></tr>    <tr><td><code>住所清單</code></td><td><code>設定表!$D$225:INDEX(設定表!$D$225:$D$234,COUNTA(設定表!$D$225:$D$234))</code></td></tr>    <tr><td><code>性別清單</code></td><td><code>設定表!$B$225:INDEX(設定表!$B$225:$B$234,COUNTA(設定表!$B$225:$B$234))</code></td></tr>    <tr><td><code>查獲管轄清單</code></td><td><code>設定表!$H$158:INDEX(設定表!$H$158:$H$171,COUNTA(設定表!$H$158:$H$171))</code></td></tr>    <tr><td><code>毒品管制情形清單</code></td><td><code>設定表!$H$225:INDEX(設定表!$H$225:$H$234,COUNTA(設定表!$H$225:$H$234))</code></td></tr>    <tr><td><code>員警姓名清單</code></td><td><code>設定表!$C$24:INDEX(設定表!$C$24:$C$84,COUNTA(設定表!$C$24:$C$84))</code></td></tr>    <tr><td><code>時清單</code></td><td><code>設定表!$F$176:INDEX(設定表!$F$176:$F$206,COUNTA(設定表!$F$176:$F$206))</code></td></tr>    <tr><td><code>案件狀況清單</code></td><td><code>設定表!$D$158:INDEX(設定表!$D$158:$D$171,COUNTA(設定表!$D$158:$D$171))</code></td></tr>    <tr><td><code>案類清單</code></td><td><code>設定表!$C$88:INDEX(設定表!$C$88:$C$154,COUNTA(設定表!$C$88:$C$154))</code></td></tr>    <tr><td><code>偵辦進度清單</code></td><td><code>設定表!$B$158:INDEX(設定表!$B$158:$B$171,COUNTA(設定表!$B$158:$B$171))</code></td></tr>    <tr><td><code>通緝清單</code></td><td><code>設定表!$F$225:INDEX(設定表!$F$225:$F$234,COUNTA(設定表!$F$225:$F$234))</code></td></tr>    <tr><td><code>發生管轄清單</code></td><td><code>設定表!$F$158:INDEX(設定表!$F$158:$F$171,COUNTA(設定表!$F$158:$F$171))</code></td></tr>    <tr><td><code>發展中進度清單</code></td><td><code>設定表!$B$211:INDEX(設定表!$B$211:$B$220,COUNTA(設定表!$B$211:$B$220))</code></td></tr>    <tr><td><code>違規項目目標值</code></td><td><code>設定表!$E$239:INDEX(設定表!$E$239:$E$254,COUNTA(設定表!$B$239:$B$254))</code></td></tr>    <tr><td><code>違規項目清單</code></td><td><code>設定表!$B$239:INDEX(設定表!$B$239:$B$254,COUNTA(設定表!$B$239:$B$254))</code></td></tr>    <tr><td><code>違規項目警示</code></td><td><code>設定表!$F$239:INDEX(設定表!$F$239:$F$254,COUNTA(設定表!$B$239:$B$254))</code></td></tr>  </table>
+</section>
+
+<section id="kpi-formulas">
+  <h2>6. 核心 KPI 公式</h2>
+  <p>管制總覽分頁的核心 KPI 計算邏輯：</p>
+  <h4>未破案件（管制總覽!B21）</h4>  <pre>=COUNTIF(Tbl案件[案件狀況],&quot;未破&quot;)</pre>  <h4>已破獲未移送（管制總覽!H21）</h4>  <pre>=COUNTIF(Tbl案件[案件狀況],&quot;已破未移送&quot;)</pre>  <h4>發展中案件（管制總覽!B26）</h4>  <pre>=COUNTA(Tbl發展中[編號])</pre>  <h4>交通取締（管制總覽!H26）</h4>  <pre>=COUNTA(Tbl交通[編號])</pre>  <h4>績效統計案件（管制總覽!K26）</h4>  <pre>=COUNTA(Tbl刑案[編號])</pre>
+  <h3>未破案件管制 KPI（範例）</h3>
+  <ul>
+    <li><strong>未破案件總數</strong> = <code>COUNTIFS(Tbl案件[案件狀況],"未破",Tbl案件[發生管轄],"本轄")</code></li>
+    <li><strong>已破未移送</strong> = <code>COUNTIF(Tbl案件[案件狀況],"已破未移送")</code></li>
+    <li><strong>逾 30 日未破</strong> = <code>SUMPRODUCT((Tbl案件[案件狀況]="未破")*(Tbl案件[發生管轄]="本轄")*(TODAY()-Tbl案件[發生時間]&gt;30))</code></li>
+    <li><strong>本週新增未破</strong> = <code>SUMPRODUCT((Tbl案件[案件狀況]="未破")*(Tbl案件[發生管轄]="本轄")*(TODAY()-Tbl案件[建立時間]&lt;=7))</code></li>
+  </ul>
+</section>
+
+<section id="data-validations">
+  <h2>7. 資料驗證（下拉選單）</h2>
+  <p>20 條下拉清單規則，確保資料輸入一致性：</p>
+  <table>
+    <tr><th>分頁</th><th>儲存格範圍</th><th>類型</th><th>來源</th></tr>
+    <tr><td>案件輸入</td><td><code>C9</code></td><td>list</td><td><code>案類清單</code></td></tr>    <tr><td>案件輸入</td><td><code>E9</code></td><td>list</td><td><code>員警姓名清單</code></td></tr>    <tr><td>案件輸入</td><td><code>C24</code></td><td>list</td><td><code>偵辦進度清單</code></td></tr>    <tr><td>案件輸入</td><td><code>E24</code></td><td>list</td><td><code>案件狀況清單</code></td></tr>    <tr><td>案件輸入</td><td><code>C25</code></td><td>list</td><td><code>發生管轄清單</code></td></tr>    <tr><td>案件輸入</td><td><code>E25</code></td><td>list</td><td><code>查獲管轄清單</code></td></tr>    <tr><td>案件輸入</td><td><code>C13 C19</code></td><td>list</td><td><code>民國年清單</code></td></tr>    <tr><td>案件輸入</td><td><code>E13 E19</code></td><td>list</td><td><code>月清單</code></td></tr>    <tr><td>案件輸入</td><td><code>C14 C20</code></td><td>list</td><td><code>日清單</code></td></tr>    <tr><td>案件輸入</td><td><code>E14 E20</code></td><td>list</td><td><code>時清單</code></td></tr>    <tr><td>發展中案件管制</td><td><code>D15:D164</code></td><td>list</td><td><code>發展中進度清單</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>E15:E164</code></td><td>list</td><td><code>性別清單</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>F15:F164</code></td><td>list</td><td><code>住所清單</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>H15:H164</code></td><td>list</td><td><code>通緝清單</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>I15:I164</code></td><td>list</td><td><code>毒品管制情形清單</code></td></tr>    <tr><td>交通績效管制</td><td><code>D44:D193 D196:D1000</code></td><td>list</td><td><code>違規項目清單</code></td></tr>    <tr><td>交通績效管制</td><td><code>F44:F193 F196:F1000</code></td><td>list</td><td><code>員警姓名清單</code></td></tr>    <tr><td>績效統計</td><td><code>C54:C203 C206:C1000</code></td><td>list</td><td><code>刑案案類清單</code></td></tr>    <tr><td>績效統計</td><td><code>G54:G203 G206:G1000</code></td><td>list</td><td><code>有無發展性清單</code></td></tr>    <tr><td>績效統計</td><td><code>H54:H203 H206:H1000</code></td><td>list</td><td><code>員警姓名清單</code></td></tr>  </table>
+</section>
+
+<section id="conditional-formatting">
+  <h2>8. 條件格式</h2>
+  <p>30 條條件格式規則，視覺化分類與警示：</p>
+  <table>
+    <tr><th>分頁</th><th>範圍</th><th>類型</th><th>條件式</th></tr>
+    <tr><td>管制總覽</td><td><code>F31:G40</code></td><td>expression</td><td><code>$F31&gt;=0.9</code></td></tr>    <tr><td>管制總覽</td><td><code>F31:G40</code></td><td>expression</td><td><code>AND($F31&gt;=0.6,$F31&lt;0.9)</code></td></tr>    <tr><td>管制總覽</td><td><code>F31:G40</code></td><td>expression</td><td><code>$F31&lt;0.6</code></td></tr>    <tr><td>管制總覽</td><td><code>K9:M11</code></td><td>expression</td><td><code>$K9&gt;=0.9</code></td></tr>    <tr><td>管制總覽</td><td><code>K9:M11</code></td><td>expression</td><td><code>AND($K9&gt;=0.6,$K9&lt;0.9)</code></td></tr>    <tr><td>管制總覽</td><td><code>K9:M11</code></td><td>expression</td><td><code>$K9&lt;0.6</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>B15:J164</code></td><td>expression</td><td><code>$H15=&quot;有&quot;</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>I15:I164</code></td><td>expression</td><td><code>$I15=&quot;尚未到驗&quot;</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>I15:I164</code></td><td>expression</td><td><code>OR($I15=&quot;已到驗&quot;,$I15=&quot;在監在所&quot;)</code></td></tr>    <tr><td>毒品調驗人口管制</td><td><code>I15:I164</code></td><td>expression</td><td><code>$I15=&quot;已聲請強採書&quot;</code></td></tr>    <tr><td>交通績效管制</td><td><code>B44:G193 B196:G1000</code></td><td>expression</td><td><code>$D44=&quot;酒駕(公共危險)&quot;</code></td></tr>    <tr><td>交通績效管制</td><td><code>D44:D193 D196:D1000</code></td><td>expression</td><td><code>OR($D44=&quot;酒駕(慢車)&quot;,$D44=&quot;酒駕(扣車)&quot;)</code></td></tr>    <tr><td>交通績效管制</td><td><code>D44:D193 D196:D1000</code></td><td>expression</td><td><code>OR($D44=&quot;闖紅燈&quot;,$D44=&quot;未禮讓行人&quot;,$D44=&quot;車輛行駛人行道&quot;,$D44=&quot;違規無照駕車移置保管&quot;,$D44=&quot;大型車動態違規&quot;)</code></td></tr>    <tr><td>交通績效管制</td><td><code>E15:E24</code></td><td>expression</td><td><code>$E15&gt;=0.9</code></td></tr>    <tr><td>交通績效管制</td><td><code>E15:E24</code></td><td>expression</td><td><code>AND($E15&gt;=0.6,$E15&lt;0.9)</code></td></tr>    <tr><td>交通績效管制</td><td><code>E15:E24</code></td><td>expression</td><td><code>$E15&lt;0.6</code></td></tr>    <tr><td>績效統計</td><td><code>B54:I203 B206:I1000</code></td><td>expression</td><td><code>$C54=&quot;酒駕(公共危險)&quot;</code></td></tr>    <tr><td>績效統計</td><td><code>C54:C203 C206:C1000</code></td><td>expression</td><td><code>LEFT($C54,2)=&quot;毒品&quot;</code></td></tr>    <tr><td>績效統計</td><td><code>G54:G203 G206:G1000</code></td><td>expression</td><td><code>$G54=&quot;有&quot;</code></td></tr>    <tr><td>歷史資料</td><td><code>B16:O16</code></td><td>expression</td><td><code>ROW()=16</code></td></tr>    <tr><td>歷史資料</td><td><code>B140:O140</code></td><td>expression</td><td><code>ROW()=16</code></td></tr>    <tr><td>歷史資料</td><td><code>F16:F135</code></td><td>expression</td><td><code>$F16&gt;=0.9</code></td></tr>    <tr><td>歷史資料</td><td><code>F16:F135</code></td><td>expression</td><td><code>AND($F16&gt;=0.6,$F16&lt;0.9)</code></td></tr>    <tr><td>歷史資料</td><td><code>F16:F135</code></td><td>expression</td><td><code>AND($F16&lt;0.6,$F16&lt;&gt;&quot;&quot;)</code></td></tr>    <tr><td>歷史資料</td><td><code>F140</code></td><td>expression</td><td><code>$F140&gt;=0.9</code></td></tr>    <tr><td>歷史資料</td><td><code>F140</code></td><td>expression</td><td><code>AND($F140&gt;=0.6,$F140&lt;0.9)</code></td></tr>    <tr><td>歷史資料</td><td><code>F140</code></td><td>expression</td><td><code>AND($F140&lt;0.6,$F140&lt;&gt;&quot;&quot;)</code></td></tr>    <tr><td>系統檢核</td><td><code>E12:E42</code></td><td>expression</td><td><code>LEFT($E12,1)=&quot;✓&quot;</code></td></tr>    <tr><td>系統檢核</td><td><code>E12:E42</code></td><td>expression</td><td><code>LEFT($E12,1)=&quot;⚠&quot;</code></td></tr>    <tr><td>系統檢核</td><td><code>E12:E42</code></td><td>expression</td><td><code>LEFT($E12,1)=&quot;✗&quot;</code></td></tr>  </table>
+</section>
+
+<section id="system-check">
+  <h2>9. 系統檢核 33 條規則</h2>
+  <p>使用者打開檔案，系統檢核分頁自動跑這 33 條規則，分四大類：</p>
+  <ul>
+    <li><strong>系統完整性</strong>：核心物件是否存在（規則 01-08）</li>
+    <li><strong>資料一致性</strong>：欄位邏輯是否矛盾（規則 09-16、32）</li>
+    <li><strong>公式運作</strong>：KPI 是否正常輸出（規則 17-22）</li>
+    <li><strong>設定表內容</strong>：基本設定是否完整（規則 23-27）</li>
+    <li><strong>設計人保護</strong>：版本與啟用日期（規則 28-31）</li>
+    <li><strong>容量管理</strong>：資料量逼近上限預警（規則 33）</li>
+  </ul>
+  <table>
+    <tr><th>#</th><th>類別</th><th>檢核項目</th><th>公式</th><th>說明</th></tr>
+    <tr><td>01</td><td>系統完整性</td><td><strong>案件資料庫表是否存在</strong></td>    <td><code>=IF(ISERROR(INDIRECT(&quot;案件資料庫!A1&quot;)),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>系統開檔即檢測</td></tr>    <tr><td>02</td><td>系統完整性</td><td><strong>設定表是否存在</strong></td>    <td><code>=IF(ISERROR(INDIRECT(&quot;設定表!A1&quot;)),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>設定表是核心配置</td></tr>    <tr><td>03</td><td>系統完整性</td><td><strong>員警姓名清單 Named Range 是否完整</strong></td>    <td><code>=IF(ISERROR(COUNTA(員警姓名清單)),&quot;✗ 失敗&quot;,IF(COUNTA(員警姓名清單)&lt;5,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;))</code></td>    <td>至少要有 5 位員警</td></tr>    <tr><td>04</td><td>系統完整性</td><td><strong>案類清單 Named Range 是否完整</strong></td>    <td><code>=IF(ISERROR(COUNTA(案類清單)),&quot;✗ 失敗&quot;,IF(COUNTA(案類清單)&lt;10,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;))</code></td>    <td>至少要有 10 個案類</td></tr>    <tr><td>05</td><td>系統完整性</td><td><strong>違規項目清單是否完整</strong></td>    <td><code>=IF(ISERROR(COUNTA(違規項目清單)),&quot;✗ 失敗&quot;,IF(COUNTA(違規項目清單)&lt;8,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;))</code></td>    <td>至少要有 8 項違規</td></tr>    <tr><td>06</td><td>系統完整性</td><td><strong>刑案案類清單是否完整</strong></td>    <td><code>=IF(ISERROR(COUNTA(刑案案類清單)),&quot;✗ 失敗&quot;,IF(COUNTA(刑案案類清單)&lt;10,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;))</code></td>    <td>至少要有 10 個刑案案類</td></tr>    <tr><td>07</td><td>系統完整性</td><td><strong>Tbl案件 Excel Table 是否完整</strong></td>    <td><code>=IF(COUNTA(案件資料庫!$B$13:$Y$13)&gt;=18,&quot;✓ 通過&quot;,&quot;✗ 失敗&quot;)</code></td>    <td>案件資料庫表頭應有 18 欄以上</td></tr>    <tr><td>08</td><td>系統完整性</td><td><strong>工作表數量是否正確</strong></td>    <td><code>=IF(COUNTA(設定表!$C$15)=1,&quot;✓ 通過&quot;,&quot;⚠ 警告&quot;)</code></td>    <td>派出所名稱必須存在</td></tr>    <tr><td>09</td><td>資料一致性</td><td><strong>案件編號是否有重複</strong></td>    <td><code>=IF(SUMPRODUCT((COUNTIF(Tbl案件[編號],Tbl案件[編號])&gt;1)*(Tbl案件[編號]&lt;&gt;&quot;&quot;))&gt;0,&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>編號是案件主鍵不可重複</td></tr>    <tr><td>10</td><td>資料一致性</td><td><strong>未破案件是否有破獲時間</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[案件狀況]=&quot;未破&quot;)*(Tbl案件[破獲時間]&lt;&gt;&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>未破案件不應有破獲時間</td></tr>    <tr><td>11</td><td>資料一致性</td><td><strong>已破案件是否有破獲時間</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[偵辦進度]=&quot;已破獲&quot;)*(Tbl案件[破獲時間]=&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>已破獲應記錄破獲時間</td></tr>    <tr><td>12</td><td>資料一致性</td><td><strong>本轄案件是否漏記發生時間</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[發生管轄]=&quot;本轄&quot;)*(Tbl案件[發生時間]=&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>本轄發生案件必填發生時間</td></tr>    <tr><td>13</td><td>資料一致性</td><td><strong>案件是否漏填承辦人</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[編號]&lt;&gt;&quot;&quot;)*(Tbl案件[承辦人]=&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>每案應指定承辦人</td></tr>    <tr><td>14</td><td>資料一致性</td><td><strong>案件是否漏填案類</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[編號]&lt;&gt;&quot;&quot;)*(Tbl案件[案類]=&quot;&quot;))&gt;0,&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>案類為必填欄位</td></tr>    <tr><td>15</td><td>資料一致性</td><td><strong>案件是否漏填案情摘要</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[編號]&lt;&gt;&quot;&quot;)*(Tbl案件[案情摘要]=&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>案情摘要建議填寫</td></tr>    <tr><td>16</td><td>資料一致性</td><td><strong>毒品調驗是否漏填管制情形</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl毒調[編號]&lt;&gt;&quot;&quot;)*(Tbl毒調[管制情形]=&quot;&quot;))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>管制情形必填</td></tr>    <tr><td>17</td><td>公式運作</td><td><strong>管制總覽 KPI 是否運作</strong></td>    <td><code>=IF(ISERROR(管制總覽!$E$9),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>全般發生數應正常顯示</td></tr>    <tr><td>18</td><td>公式運作</td><td><strong>破獲率是否運作</strong></td>    <td><code>=IF(ISERROR(管制總覽!$K$9),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>全般破獲率應正常顯示</td></tr>    <tr><td>19</td><td>公式運作</td><td><strong>毒品調驗率是否運作</strong></td>    <td><code>=IF(ISERROR(管制總覽!$E$20),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>毒調率應正常顯示</td></tr>    <tr><td>20</td><td>公式運作</td><td><strong>Top 3 受理發生案件是否運作</strong></td>    <td><code>=IF(ISERROR(管制總覽!$D$15),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>Top 3 排序應正常運作</td></tr>    <tr><td>21</td><td>公式運作</td><td><strong>績效統計分類是否運作</strong></td>    <td><code>=IF(ISERROR(績效統計!$B$8),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>績效統計 KPI 應正常顯示</td></tr>    <tr><td>22</td><td>公式運作</td><td><strong>員警佔比表是否運作</strong></td>    <td><code>=IF(ISERROR(績效統計!$B$36),&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>員警佔比表應正常顯示</td></tr>    <tr><td>23</td><td>設定表內容</td><td><strong>派出所名稱是否填寫</strong></td>    <td><code>=IF(設定表!$C$15=&quot;&quot;,&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>派出所名稱不可空白</td></tr>    <tr><td>24</td><td>設定表內容</td><td><strong>員警人數是否充足</strong></td>    <td><code>=IF(COUNTA(員警姓名清單)&lt;5,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>建議至少 5 位員警</td></tr>    <tr><td>25</td><td>設定表內容</td><td><strong>案類數量是否充足</strong></td>    <td><code>=IF(COUNTA(案類清單)&lt;10,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>建議至少 10 個案類</td></tr>    <tr><td>26</td><td>設定表內容</td><td><strong>違規項目目標值是否合理</strong></td>    <td><code>=IF(SUM(違規項目目標值)&gt;0,&quot;✓ 通過&quot;,&quot;⚠ 警告&quot;)</code></td>    <td>違規目標值總和應 &gt; 0</td></tr>    <tr><td>27</td><td>設定表內容</td><td><strong>刑案案類分類是否完整</strong></td>    <td><code>=IF(COUNTA(刑案案類分類)=COUNTA(刑案案類清單),&quot;✓ 通過&quot;,&quot;⚠ 警告&quot;)</code></td>    <td>案類與分類數量應一致</td></tr>    <tr><td>28</td><td>設計人保護</td><td><strong>設計人標記是否完整</strong></td>    <td><code>=IF(設定表!$C$6&lt;&gt;&quot;林錦瑞&quot;,&quot;✗ 失敗&quot;,&quot;✓ 通過&quot;)</code></td>    <td>系統設計人為林錦瑞</td></tr>    <tr><td>29</td><td>設計人保護</td><td><strong>版本號是否完整</strong></td>    <td><code>=IF(ISERROR(SEARCH(&quot;KKEVIN-LIN-2026&quot;,首頁_操作說明!$A$4)),&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>版本號 KKEVIN-LIN-2026</td></tr>    <tr><td>30</td><td>設計人保護</td><td><strong>啟用日期是否完整</strong></td>    <td><code>=IF(設定表!$C$9=&quot;&quot;,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>啟用日期應有記錄</td></tr>    <tr><td>31</td><td>設計人保護</td><td><strong>歷史資料快照是否運作</strong></td>    <td><code>=IF(COUNTA(Tbl歷史[統計年月])&gt;=1,&quot;✓ 通過&quot;,&quot;⚠ 警告&quot;)</code></td>    <td>至少應有 1 筆月份快照</td></tr>    <tr><td>32</td><td>資料一致性</td><td><strong>發生時間是否被存成文字</strong></td>    <td><code>=IF(SUMPRODUCT((Tbl案件[編號]&lt;&gt;&quot;&quot;)*(Tbl案件[發生時間]&lt;&gt;&quot;&quot;)*(ISNUMBER(Tbl案件[發生時間])=FALSE))&gt;0,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;...</code></td>    <td>發生時間須為日期值，非文字（否則統計失準）</td></tr>    <tr><td>33</td><td>容量管理</td><td><strong>案件量是否逼近 500 列硬上限</strong></td>    <td><code>=IF(COUNTA(案件資料庫!$B$14:$B$500)&gt;=487,&quot;⚠ 警告&quot;,&quot;✓ 通過&quot;)</code></td>    <td>逼近上限請盡速將舊案歸檔至歷史資料</td></tr>  </table>
+</section>
+
+<section id="workflow">
+  <h2>10. 工作流程（案件生命週期）</h2>
+  <h3>10.1 新增案件</h3>
+  <ol>
+    <li>使用者打開「案件資料庫」分頁（密碼 <code>KD2026</code> 解鎖）</li>
+    <li>在 Tbl案件 第一筆空白列填入 14 個欄位（必填 9 欄、選填 5 欄）</li>
+    <li>使用下拉選單選擇：案類、案件狀況、偵辦進度、發生/查獲管轄、承辦人</li>
+    <li>填入發生時間、案情摘要、發生地點等文字欄位</li>
+    <li>計算欄（R:Y 鎖定）自動產生「是否破獲、歸屬年度、未破排序、竊盜排序…」等</li>
+    <li>所有相關管制表（未破/竊盜/詐欺/管制總覽）即時更新</li>
+  </ol>
+  <div class="warn-box">
+    <strong>注意：</strong>「案件輸入」分頁雖有表單外觀，但 v43 無巨集後無「寫入資料庫」按鈕，<strong>實際輸入請至「案件資料庫」</strong>。
+  </div>
+
+  <h3>10.2 案件狀態轉換</h3>
+  <pre>
+新增   →  未破        ←─┐
+         ↓               │（偵辦中）
+       已破獲           │
+         ↓               │
+       已破未移送  ──────┘
+         ↓
+       已移送
+         ↓
+       簽結（結案）
+  </pre>
+
+  <h3>10.3 月份結算（手動，規則 31 永遠 WARN 提醒）</h3>
+  <ol>
+    <li>每月底打開「歷史資料」分頁</li>
+    <li>看 R140 列「本月即時 KPI」（公式自動算出當月數字）</li>
+    <li>選取該列 C:N → 複製</li>
+    <li>在最上方資料列（R16）按右鍵「插入列」</li>
+    <li>新列上「選擇性貼上 → 值」（凍結成快照，不再隨資料變動）</li>
+    <li>B 欄填統計年月（民國年/月，如 115/05）、O 欄填備註</li>
+  </ol>
+
+  <h3>10.4 案件量逼近 500 列</h3>
+  <ol>
+    <li>規則 33 預警觸發（&ge; 487 列）</li>
+    <li>判斷哪些舊案可歸檔（已結案/簽結超過 6 個月）</li>
+    <li>把這些舊案從 Tbl案件 中刪除（也可備份到外部）</li>
+    <li>系統繼續執行</li>
+  </ol>
+</section>
+
+<section id="ui-spec">
+  <h2>11. UI 視覺規範</h2>
+  <h3>11.1 配色</h3>
+  <table>
+    <tr><th>用途</th><th>色碼</th><th>說明</th></tr>
+    <tr><td>標題列底色</td><td><code>#1F4E79</code></td><td>深藍，欄位 header 用</td></tr>
+    <tr><td>區塊一橫條</td><td><code>#C65911</code></td><td>橘色，section title</td></tr>
+    <tr><td>區塊二橫條</td><td><code>#993C1D</code> / <code>#3B6D11</code></td><td>暗紅／深綠，次要 section</td></tr>
+    <tr><td>使用須知 / 黃色條</td><td><code>#FAEEDA</code></td><td>淺米黃，instruction</td></tr>
+    <tr><td>淡灰自動欄</td><td><code>#F1EFE8</code></td><td>不可手動編輯的計算欄</td></tr>
+    <tr><td>淡黃輸入欄</td><td><code>#FFF8E1</code></td><td>使用者輸入欄</td></tr>
+    <tr><td>達成率紅（&lt;60%）</td><td><code>#FCE4EC</code></td><td>警示</td></tr>
+    <tr><td>達成率黃（60-90%）</td><td><code>#FFF8E1</code></td><td>關注</td></tr>
+    <tr><td>達成率綠（&ge;90%）</td><td><code>#E8F5E9</code></td><td>達標</td></tr>
+  </table>
+  <h3>11.2 欄寬規則</h3>
+  <ul>
+    <li>A 欄、末欄：3-4（spacer，視覺留白）</li>
+    <li>編號類：8-11</li>
+    <li>日期類：13-14</li>
+    <li>案類/狀況類：10-12</li>
+    <li>地點類：22-26</li>
+    <li>案情摘要：32-36</li>
+    <li>承辦人：10-11</li>
+  </ul>
+  <h3>11.3 凍結窗格與 outline</h3>
+  <ul>
+    <li>三大管制表凍結欄位標題列下一列（A16 / A18）</li>
+    <li>區塊一預設顯示 100 列、區塊二 50 列</li>
+    <li>其他列用 outline group hidden，使用者點 + 號展開</li>
+  </ul>
+  <h3>11.4 列印規範</h3>
+  <ul>
+    <li>A4 橫向、fit-to-width=1、fit-to-height=auto</li>
+    <li>列印區段化：只印可見區（多區段 print_area）</li>
+    <li>列印標題列：只重印欄位標題列（一列），不重印 KPI dashboard</li>
+    <li>邊距：左右 0.3" / 上下 0.4"</li>
+  </ul>
+</section>
+
+<section id="constraints">
+  <h2>12. 限制與技術決策</h2>
+  <div class="note">Plan B：去巨集化（v42 → v43），所有寫入動作改為手動</div>  <div class="note">案件資料庫硬上限 500 列（規則 33 預警，建議舊案歸檔到歷史資料）</div>  <div class="note">案件資料庫工作表受保護（密碼 KD2026），計算欄 R:Y 鎖定</div>  <div class="note">所有中文一律走 UTF-8 sidecar（PS5.1 ANSI 讀 .ps1 會毀中文字面值）</div>  <div class="note">月快照只能手動操作（規則 31 永遠 WARN 提醒）</div>  <div class="note">公開版必須抽查 sample_cases.tsv 無真實字眼、補 LICENSE</div>
+</section>
+
+<section id="redesign">
+  <h2>13. 重做建議</h2>
+  <p>若您要從零重做（不論是 Excel 重寫、Web App、Access），請保留以下核心設計，並考慮以下改善方向：</p>
+
+  <h3>13.1 一定要保留的設計</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4>✓ Single Source of Truth</h4>
+      <p>案件只在一張表編輯，所有 view 自動同步。這是系統一致性的基石。</p>
+    </div>
+    <div class="card">
+      <h4>✓ 33 條自動檢核</h4>
+      <p>每次打開檔案就驗證資料一致性，比事後抽查可靠百倍。</p>
+    </div>
+    <div class="card">
+      <h4>✓ 多層級可見性</h4>
+      <p>長官看 50 列、稽核展開全部。outline 機制有效。</p>
+    </div>
+    <div class="card">
+      <h4>✓ 公開版 / 內部版分離</h4>
+      <p>內部含真名、公開版完全去識別化。建議自動化 sanitization pipeline。</p>
+    </div>
+  </div>
+
+  <h3>13.2 可改善的方向</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4>⚠ 案件輸入分頁</h4>
+      <p>v43 後完全無作用，應該：① 改成「預覽列 + 貼上工作流」② 或徹底刪除、改在資料庫直接編輯</p>
+    </div>
+    <div class="card">
+      <h4>⚠ KPI Dashboard 與資料欄寬綁定</h4>
+      <p>3 大管制表的 KPI 卡片用同樣欄位，導致卡片寬度被資料欄拖累。建議 KPI 用獨立列高 + 文字塊（不依欄位寬度）。</p>
+    </div>
+    <div class="card">
+      <h4>⚠ 月快照手動流程</h4>
+      <p>沒有巨集就只能手動。若改成 Web 版可自動化此流程。</p>
+    </div>
+    <div class="card">
+      <h4>⚠ 多人共用</h4>
+      <p>Excel 檔案是單機型，多派出所需要分別維護。若改 Web App 可中央集權。</p>
+    </div>
+  </div>
+
+  <h3>13.3 如果改成 Web App</h3>
+  <ul>
+    <li><strong>技術選擇</strong>：前端 vanilla JS + 後端 Node.js / Python FastAPI + 資料庫 SQLite/PostgreSQL</li>
+    <li><strong>資料模型</strong>：照本說明書的 6 個 Table 1:1 翻成資料庫 schema</li>
+    <li><strong>檢核規則</strong>：33 條規則改寫成後端 validation hooks 或前端 form 即時驗證</li>
+    <li><strong>列印</strong>：用 print CSS 或產生 PDF（puppeteer 或 weasyprint）</li>
+    <li><strong>權限</strong>：員警／所長／分局／縣府四層 RBAC</li>
+    <li><strong>離線</strong>：PWA + IndexedDB，斷網仍可登錄</li>
+  </ul>
+
+  <h3>13.4 如果留在 Excel 但重設計</h3>
+  <ul>
+    <li>把 KPI Dashboard 抽到獨立分頁（不與資料表共用欄位）</li>
+    <li>明確標示「案件輸入」表單不可用、引導去案件資料庫</li>
+    <li>建立 case template snippet：使用者複製一列空白模板再貼到案件資料庫</li>
+    <li>加上自動歸檔輔助：規則 33 觸發時，提示哪些案件可歸檔</li>
+  </ul>
+</section>
+
+<hr>
+<div style="text-align: center; color: var(--muted); font-size: 12px; margin-top: 32px;">
+  <p>系統設計人　林　錦　瑞　｜　KKEVIN-LIN-2026-V2.0<br>
+  本說明書由 design.json (v43_natl.xlsx 自動抽取) 生成於 2026-05-23 22:17</p>
+</div>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+
+# 開發 / 編輯器
+.vscode/
+.idea/
+*.swp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Build 過程暫存
+build/log/
+build/output/*_bak_*.xlsx
+build/output/_*.xlsx
+build/output/_sparkline_tmp/
+build/output/_deploy_sparkline_tmp/
+
+# 個資 / 敏感（防止 派出所自填資料 不慎 commit）
+**/PoliceStation_*_自填*.xlsx
+**/PoliceStation_*_實際*.xlsx
+*.env
+*credentials*
+*password*

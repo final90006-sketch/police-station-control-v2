@@ -1,0 +1,70 @@
+{
+  "version": "v2.0",
+  "version_tag": "KKEVIN-LIN-2026-V2.0",
+  "creator": "林錦瑞",
+  "build_date": "2026-05-25",
+  "file_format_code": 51,
+  "file_format_note": "51 = xlOpenXMLWorkbook (.xlsx, no macros, v43 compatible)",
+
+  "today_centralization": {
+    "sheet": "設定表",
+    "label_cell": "E2",
+    "label_text": "今日（公式集中，全 v2 引用）",
+    "formula_cell": "F2",
+    "formula": "=TODAY()",
+    "named_range": "今日"
+  },
+
+  "sheets": [
+    {"order": 1, "name": "首頁_操作說明", "freeze": null, "purpose": "首頁/角色分流/5分鐘上手"},
+    {"order": 2, "name": "管制總覽", "freeze": null, "purpose": "九宮格 KPI"},
+    {"order": 3, "name": "全般刑案管制情形分析", "freeze": null, "purpose": "頁 2.5 — 本所 vs 分局比較分析"},
+    {"order": 4, "name": "長官5分鐘報告", "freeze": null, "purpose": "金字塔結構月報"},
+    {"order": 5, "name": "對上級機關上呈", "freeze": null, "purpose": "三層格式切換"},
+    {"order": 6, "name": "案件資料庫", "freeze": null, "freeze_col": null, "purpose": "SSOT 主表 22 欄 1000 列"},
+    {"order": 7, "name": "刑案管制", "freeze": null, "purpose": "5 視圖合併頁"},
+    {"order": 8, "name": "發展中案件管制", "freeze": null, "purpose": "70/30 兩欄管制"},
+    {"order": 9, "name": "毒品調驗人口管制", "freeze": null, "purpose": "70/30 + 關鍵字偵測"},
+    {"order": 10, "name": "交通績效管制", "freeze": null, "purpose": "達成率看板"},
+    {"order": 11, "name": "交通取締明細", "freeze": null, "freeze_col": null, "purpose": "頁 9.5 — Tbl交通 6 欄"},
+    {"order": 12, "name": "績效統計", "freeze": null, "purpose": "上案類下員警 Top 10"},
+    {"order": 13, "name": "員警個人績效卡", "freeze": null, "purpose": "員警下拉切換"},
+    {"order": 14, "name": "跨期間趨勢分析", "freeze": null, "purpose": "v2 唯一 sparkline 頁"},
+    {"order": 15, "name": "設定表", "freeze": null, "purpose": "SSOT 底層 8 大分區"},
+    {"order": 16, "name": "歷史資料", "freeze": null, "purpose": "Tbl歷史 14 欄月份快照"},
+    {"order": 17, "name": "系統檢核", "freeze": null, "purpose": "45 條健檢 7 大類"}
+  ],
+
+  "named_ranges_phase1": [
+    {"name": "今日", "refers_to": "=設定表!$F$2", "scope": "Workbook", "note": "TODAY() 集中"}
+  ],
+
+  "default_column_widths": {
+    "編號": 8,
+    "案類": 14,
+    "日期": 14,
+    "案情摘要": 30,
+    "備註": 24,
+    "金額": 12,
+    "default": 12
+  },
+
+  "default_row_height": {
+    "header": 28,
+    "data": 22,
+    "kpi": 56
+  },
+
+  "default_font": {
+    "family": "微軟正黑體",
+    "size_body": 11,
+    "size_header": 12,
+    "size_title": 14,
+    "size_kpi": 28
+  },
+
+  "skeleton_marker": {
+    "cell": "A1",
+    "text_template": "{sheet_name} ｜ v2 骨架（Phase 1）｜ 內容由後續 Phase 填入"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "version": "v2.0",
+  "phase": "2",
+  "phase_name": "三大資料表（案件/取締/歷史）— Excel Table 動態擴張",
+
+  "page5_case_database": {
+    "sheet": "案件資料庫",
+    "table_name": "Tbl案件",
+    "freeze_row": 14,
+    "header_row": 14,
+    "data_start_row": 15,
+    "data_max_row": 1014,
+    "capacity": 1000,
+    "warning_threshold": 800,
+    "password": "KD2026",
+    "columns": [
+      {"name": "編號",         "width": 10, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "案類",         "width": 22, "kind": "input",    "dv": "案類名稱清單", "format": "general"},
+      {"name": "E化案號",      "width": 16, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "發生時間",     "width": 22, "kind": "input",    "dv": null,             "format": "datetime"},
+      {"name": "發生地點",     "width": 26, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "破獲時間",     "width": 22, "kind": "input",    "dv": null,             "format": "datetime"},
+      {"name": "破獲地點",     "width": 26, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "案情摘要",     "width": 36, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "偵辦進度",     "width": 14, "kind": "input",    "dv": "偵辦進度清單", "format": "general"},
+      {"name": "案件狀況",     "width": 18, "kind": "input",    "dv": "案件狀況清單", "format": "general"},
+      {"name": "發生管轄",     "width": 12, "kind": "input",    "dv": "發生管轄清單", "format": "general"},
+      {"name": "查獲管轄",     "width": 12, "kind": "input",    "dv": "查獲管轄清單", "format": "general"},
+      {"name": "承辦人",       "width": 14, "kind": "input",    "dv": "員警姓名清單", "format": "general"},
+      {"name": "備註",         "width": 28, "kind": "input",    "dv": null,             "format": "general"},
+      {"name": "涉案金額",     "width": 14, "kind": "input",    "dv": null,             "format": "money"},
+      {"name": "建立日期",     "width": 18, "kind": "input",    "dv": null,             "format": "date_roc"},
+      {"name": "建立者",       "width": 12, "kind": "input",    "dv": "員警姓名清單", "format": "general"},
+      {"name": "是否破獲",     "width": 10, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR(IF(OR([@案件狀況]=\"已破獲未移送\",[@案件狀況]=\"已移送\"),\"是\",\"否\"),\"\")"},
+      {"name": "歸屬年度",     "width": 12, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR(IF([@發生時間]=\"\",\"\",YEAR([@發生時間])-1911),\"\")"},
+      {"name": "案類分類",     "width": 12, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR(INDEX(案類分類清單,MATCH([@案類],案類名稱清單,0)),\"\")"},
+      {"name": "是否納入統計", "width": 14, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR(INDEX(納入全般清單,MATCH([@案類],案類名稱清單,0)),\"否\")"},
+      {"name": "主排序鍵",     "width": 12, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR([@歸屬年度]*10000+IFERROR(MATCH([@案件狀況],{\"尚未偵破\",\"已破獲未移送\",\"已移送\",\"簽結\"},0),0)*100+ROW(),0)"},
+      {"name": "績效類別",     "width": 14, "kind": "input",    "dv": "績效類別清單",  "format": "general"},
+      {"name": "計入發生數",   "width": 12, "kind": "calc",     "dv": null,             "format": "general",
+       "formula": "=IFERROR(IF([@績效類別]=\"\",\"是\",\"否\"),\"是\")"},
+      {"name": "自填案類",     "width": 18, "kind": "input",    "dv": null,             "format": "general"}
+    ],
+    "sample_rows": [
+      ["001", "詐欺(普通)", "E115050001", "2026-05-03 14:20", "中正路 123 號", "", "", "假投資詐騙",                  "偵辦中",     "尚未偵破",     "本轄", "",     "王小明", "受害人 70 歲長者", 50000,  "2026-05-03", "王小明", "", "", "", "", "", "",         "", ""],
+      ["002", "竊盜(機車)", "E115050002", "2026-05-12 02:30", "和平路 56 號",  "2026-05-15 10:00", "和平路", "機車竊盜，5/15 自首", "已破獲", "已破獲未移送", "本轄", "本轄", "李大華", "監視器佐證",       25000,  "2026-05-12", "李大華", "", "", "", "", "", "",         "", ""],
+      ["003", "毒品(三級)", "E115050003", "2026-05-18 22:00", "復興路 78 號前", "2026-05-18 22:30", "復興路 78 號", "當場查獲現行犯",       "已移送", "已移送",       "本轄", "本轄", "陳美玲", "驗尿陽性",         0,      "2026-05-18", "陳美玲", "", "", "", "", "", "毒品線上", "", ""],
+      ["004", "詐欺(車手)", "E115050004", "2026-05-20 16:00", "岡山區中山路 88 號", "2026-05-20 17:30", "岡山區", "拘提掃碼車手", "已破獲", "已破獲未移送", "他轄", "本轄", "王小明", "跨縣市拘提，岡山分局協辦", 120000, "2026-05-20", "王小明", "", "", "", "", "", "其他線上", "", ""]
+    ],
+    "blank_rows": 200,
+    "table_style": "TableStyleMedium2"
+  },
+
+  "page9_5_traffic_detail": {
+    "sheet": "交通取締明細",
+    "table_name": "Tbl交通",
+    "freeze_row": 14,
+    "header_row": 14,
+    "data_start_row": 15,
+    "capacity": 196,
+    "columns": [
+      {"name": "編號",     "width": 10, "kind": "input", "dv": null,           "format": "general"},
+      {"name": "取締日期", "width": 20, "kind": "input", "dv": null,           "format": "date_roc"},
+      {"name": "違規項目", "width": 24, "kind": "input", "dv": "違規項目清單", "format": "general"},
+      {"name": "舉發單號", "width": 16, "kind": "input", "dv": null,           "format": "general"},
+      {"name": "取締員警", "width": 14, "kind": "input", "dv": "員警姓名清單", "format": "general"},
+      {"name": "備註",     "width": 32, "kind": "input", "dv": null,           "format": "general"}
+    ],
+    "sample_rows": [
+      ["001", "2026-05-02", "車輛不停讓行人", "A1234567", "王小明", "中正路口示範"],
+      ["002", "2026-05-05", "行人違規",       "B2345678", "李大華", "西門商圈夜間"],
+      ["003", "2026-05-08", "車輛行駛人行道", "A1234568", "陳美玲", "中華路口"],
+      ["004", "2026-05-10", "大型車動態違規", "C3456789", "王小明", "萬大路口"],
+      ["005", "2026-05-12", "慢車易肇事違規", "A1234569", "李大華", "西藏路口"]
+    ],
+    "blank_rows": 100,
+    "table_style": "TableStyleMedium4"
+  },
+
+  "page14_history": {
+    "sheet": "歷史資料",
+    "table_name": "Tbl歷史",
+    "freeze_row": 10,
+    "header_row": 10,
+    "data_start_row": 11,
+    "capacity": 140,
+    "columns": [
+      {"name": "統計年月",   "width": 12, "kind": "input", "dv": null, "format": "general"},
+      {"name": "全般發生",   "width": 12, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "全般未破",   "width": 12, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "全般破獲",   "width": 12, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "破獲率",     "width": 10, "kind": "input", "dv": null, "format": "percent_one"},
+      {"name": "竊盜",       "width": 10, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "詐欺",       "width": 10, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "已破獲未移送",   "width": 14, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "發展中",     "width": 10, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "毒調率",     "width": 10, "kind": "input", "dv": null, "format": "percent_one"},
+      {"name": "未到驗",     "width": 10, "kind": "input", "dv": null, "format": "integer"},
+      {"name": "交通達標",   "width": 12, "kind": "input", "dv": null, "format": "percent_one"},
+      {"name": "員警冠軍",   "width": 14, "kind": "input", "dv": "員警姓名清單", "format": "general"},
+      {"name": "備註",       "width": 28, "kind": "input", "dv": null, "format": "general"}
+    ],
+    "sample_rows": [
+      ["115/04", 62, 11, 54, 0.87, 17, 15, 6, 10, 0.54, 10, 0.65, "李大華", ""],
+      ["115/03", 58, 12, 48, 0.83, 15, 14, 5, 9,  0.58, 9,  0.63, "王小明", ""],
+      ["115/02", 55, 13, 42, 0.76, 14, 12, 4, 8,  0.60, 8,  0.60, "陳美玲", "春節期間"],
+      ["115/01", 60, 14, 45, 0.75, 16, 13, 5, 9,  0.60, 8,  0.58, "王小明", "年初新案多"],
+      ["114/12", 52, 10, 40, 0.77, 13, 11, 4, 7,  0.62, 7,  0.62, "李大華", ""]
+    ],
+    "blank_rows": 30,
+    "table_style": "TableStyleMedium6"
+  }
+}
