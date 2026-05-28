@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.worksheet.table import Table, TableStyleInfo, TableColumn, TableFormula
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
@@ -226,6 +226,33 @@ def build_tbl_drug(wb, log):
     # === 註冊 Excel Table ===（v2.2 擴 12→14 欄）
     table_ref = f"A{DRUG_HEADER_ROW}:N{DRUG_DATA_END}"
     tbl = Table(displayName=DRUG_TABLE, name=DRUG_TABLE, ref=table_ref)
+
+    # ★★ 防 #REF! 地雷（v2.2 修）：計算欄 K/L/M/N 補 calculatedColumnFormula
+    #    與 build 迴圈寫入的 cell 公式完全一致（[@...] 結構引用）
+    DRUG_CALC_FORMULAS = {
+        "距今天數":
+            'IFERROR(IF([@最後到驗日]="","",今日-[@最後到驗日]),"")',
+        "是否到驗":
+            'IFERROR(IF([@管制情形]="",0,IF(OR(SUMPRODUCT(--ISNUMBER(SEARCH('
+            '{"已驗","已到驗","通緝","強採","在監"},[@管制情形])))>0,'
+            'AND(ISNUMBER([@距今天數]),[@距今天數]<=30)),1,0)),0)',
+        "狀態燈":
+            'IFERROR(IF([@管制情形]="","○ 未填",'
+            'IF(ISNUMBER(SEARCH("解除",[@管制情形])),"○ 結束",'
+            'IF(AND(ISNUMBER([@距今天數]),[@距今天數]>30),"● 紅",'
+            'IF([@是否到驗]=1,"● 綠","⚠ 黃")))),"")',
+        "候選旗標":
+            'IFERROR(IF(OR(ISNUMBER(SEARCH("未到驗",[@管制情形])),'
+            'AND(ISNUMBER([@距今天數]),[@距今天數]>30)),1,0),0)',
+    }
+    tcols = []
+    for i, (h, w, dv, kind, fmt) in enumerate(DRUG_COLUMNS, start=1):
+        tc = TableColumn(id=i, name=h)
+        if h in DRUG_CALC_FORMULAS:
+            tc.calculatedColumnFormula = TableFormula(attr_text=DRUG_CALC_FORMULAS[h])
+        tcols.append(tc)
+    tbl.tableColumns = tcols
+
     tbl.tableStyleInfo = TableStyleInfo(
         name="TableStyleMedium5",
         showFirstColumn=False,

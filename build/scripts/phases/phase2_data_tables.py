@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from openpyxl import load_workbook
-from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.worksheet.table import Table, TableStyleInfo, TableColumn, TableFormula
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 
@@ -179,6 +179,22 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
     last_col = get_column_letter(len(columns))
     ref = f"A{header_row}:{last_col}{end_row}"
     table = Table(displayName=table_name, ref=ref)
+
+    # ★★ 防 #REF! 地雷（v2.2 修）：明確建 TableColumn 並為計算欄補
+    #    calculatedColumnFormula。缺此宣告時，使用者一編輯/刪列，
+    #    Excel 會把計算欄 cell 的 [@欄名] 結構引用崩成 #REF!，
+    #    導致所有統計頁 COUNTIFS(Tbl[案類分類],...) 抓 0、整個系統不計算。
+    calc_count = 0
+    tcols = []
+    for i, col in enumerate(columns, start=1):
+        tc = TableColumn(id=i, name=col["name"])
+        if col["kind"] == "calc" and col.get("formula"):
+            ftext = col["formula"].lstrip("=")
+            tc.calculatedColumnFormula = TableFormula(attr_text=ftext)
+            calc_count += 1
+        tcols.append(tc)
+    table.tableColumns = tcols
+
     table.tableStyleInfo = TableStyleInfo(
         name=table_style,
         showRowStripes=True,
@@ -186,7 +202,8 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
         showFirstColumn=False,
         showLastColumn=False)
     ws.add_table(table)
-    log.info(f"  Excel Table：{table_name} 範圍 {ref} 樣式 {table_style}")
+    log.info(f"  Excel Table：{table_name} 範圍 {ref} 樣式 {table_style}"
+             f"（{calc_count} 計算欄補 calculatedColumnFormula 防 #REF!）")
 
     # === Data Validation：下拉清單 ===
     for i, col in enumerate(columns, start=1):
