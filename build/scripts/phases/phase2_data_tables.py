@@ -147,7 +147,7 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
         S.set_cell(ws, f"{col_letter}{header_row}", header_text,
                    font_key="header",
                    fill_key="header",
-                   align_key="center",
+                   align_key="center_nowrap",   # 表頭強制單行，標題整齊
                    border_key="all_thin")
         ws.column_dimensions[col_letter].width = col.get("width", 14)
     ws.row_dimensions[header_row].height = S.ROW_HEIGHT["header"]

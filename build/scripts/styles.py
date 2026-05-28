@@ -130,6 +130,8 @@ ALIGN = {
     "right":          Alignment(horizontal="right",  vertical="center", wrap_text=True),
     "left_top":       Alignment(horizontal="left",   vertical="top",    wrap_text=True),
     "center_top":     Alignment(horizontal="center", vertical="top",    wrap_text=True),
+    # 表頭專用：強制單行不折行（欄寬已足夠容納），標題整齊不長長短短
+    "center_nowrap":  Alignment(horizontal="center", vertical="center", wrap_text=False),
 }
 
 

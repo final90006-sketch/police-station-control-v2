@@ -22,10 +22,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-SRC = r"C:\Users\User\Desktop\PoliceStation_v2.2_最終版.xlsx"   # 桌面備份（D 槽已拔）
+SRC = r"C:\Users\User\Desktop\PoliceStation_v2.2_最終版_新結構.xlsx"  # 同仁資料(新欄序)
 TEMPLATE = (r"C:\Users\User\Desktop\02【工作】案件管制與自動化系統"
             r"\派出所v2_v43_開發檔案\派出所v2_build\output\PoliceStation_v2.2_部署版.xlsx")
-DST = r"C:\Users\User\Desktop\PoliceStation_v2.2_最終版_新結構.xlsx"
+DST = r"C:\Users\User\Desktop\PoliceStation_v2.2_完整版.xlsx"
 
 # 要搬移的 input 欄（依欄名；calc 欄由模板公式自動算）
 INPUT_COLS = ["編號", "案類", "E化案號", "發生時間", "發生地點", "破獲時間",
