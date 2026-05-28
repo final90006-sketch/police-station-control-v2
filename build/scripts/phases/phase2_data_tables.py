@@ -29,6 +29,32 @@ from phases._base import load_config, backup_existing, OUTPUT_PATH, get_logger
 import styles as S
 
 
+import re as _re
+
+
+def _structured_to_plain(formula: str, row: int, columns: list) -> str:
+    """把計算欄公式的結構引用 [@欄名] 轉成純儲存格參照 {欄字母}{row}。
+
+    ★★ 防 #REF! 地雷的核心（v2.2 第二版修）：
+    Excel Table 計算欄若用 [@欄名] 結構引用，使用者刪列/編輯時 Excel
+    會把它崩成 #REF!（且補 calculatedColumnFormula 又會被 Excel 判定
+    table 不合法而整個移除）。改用純參照 D15/B15，刪列自動位移、永不
+    崩 #REF!，且其他頁的 Tbl案件[案類分類] 結構引用照常運作。
+
+    例：[@發生時間] 在 row 15 → D15（發生時間 是第 4 欄）
+    """
+    name_to_col = {}
+    for i, col in enumerate(columns, start=1):
+        name_to_col[col["name"]] = get_column_letter(i)
+
+    def repl(m):
+        name = m.group(1)
+        col_letter = name_to_col.get(name)
+        return f"{col_letter}{row}" if col_letter else m.group(0)
+
+    return _re.sub(r"\[@([^\]]+)\]", repl, formula)
+
+
 def _coerce_value(val, fmt):
     """日期/datetime 欄位若收到字串，嘗試轉成 datetime 物件，否則 YEAR/MONTH 等 Excel 公式會 #VALUE!"""
     if not isinstance(val, str) or not val:
@@ -134,9 +160,10 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
             val = sample[i - 1] if i - 1 < len(sample) else ""
             fill_key = "calc" if col["kind"] == "calc" else "input"
 
-            # calc 欄：套公式而非值
+            # calc 欄：套公式而非值（v2.2 改純參照，防 #REF!）
             if col["kind"] == "calc" and col.get("formula"):
-                S.set_cell(ws, f"{col_letter}{cur_row}", col["formula"],
+                plain_fml = _structured_to_plain(col["formula"], cur_row, columns)
+                S.set_cell(ws, f"{col_letter}{cur_row}", plain_fml,
                            font_key="body",
                            fill_key="calc",
                            align_key="center",
@@ -160,7 +187,8 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
         for i, col in enumerate(columns, start=1):
             col_letter = get_column_letter(i)
             if col["kind"] == "calc" and col.get("formula"):
-                S.set_cell(ws, f"{col_letter}{r}", col["formula"],
+                plain_fml = _structured_to_plain(col["formula"], r, columns)
+                S.set_cell(ws, f"{col_letter}{r}", plain_fml,
                            font_key="body",
                            fill_key="calc",
                            align_key="center",
@@ -176,25 +204,12 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
     log.info(f"  示範 {len(samples)} 列 + 預留 {blank_rows} 列 = 表共 {end_row - header_row + 1} 列")
 
     # === Excel Table ===
+    # ★ v2.2 第二版修：計算欄改純儲存格參照（見 _structured_to_plain），
+    #   table 維持 openpyxl 自動產生欄定義（不加 calculatedColumnFormula
+    #   —— 那會被 Excel 判定不合法而整個移除 table）。
     last_col = get_column_letter(len(columns))
     ref = f"A{header_row}:{last_col}{end_row}"
     table = Table(displayName=table_name, ref=ref)
-
-    # ★★ 防 #REF! 地雷（v2.2 修）：明確建 TableColumn 並為計算欄補
-    #    calculatedColumnFormula。缺此宣告時，使用者一編輯/刪列，
-    #    Excel 會把計算欄 cell 的 [@欄名] 結構引用崩成 #REF!，
-    #    導致所有統計頁 COUNTIFS(Tbl[案類分類],...) 抓 0、整個系統不計算。
-    calc_count = 0
-    tcols = []
-    for i, col in enumerate(columns, start=1):
-        tc = TableColumn(id=i, name=col["name"])
-        if col["kind"] == "calc" and col.get("formula"):
-            ftext = col["formula"].lstrip("=")
-            tc.calculatedColumnFormula = TableFormula(attr_text=ftext)
-            calc_count += 1
-        tcols.append(tc)
-    table.tableColumns = tcols
-
     table.tableStyleInfo = TableStyleInfo(
         name=table_style,
         showRowStripes=True,
@@ -202,8 +217,9 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
         showFirstColumn=False,
         showLastColumn=False)
     ws.add_table(table)
+    calc_n = sum(1 for c in columns if c["kind"] == "calc" and c.get("formula"))
     log.info(f"  Excel Table：{table_name} 範圍 {ref} 樣式 {table_style}"
-             f"（{calc_count} 計算欄補 calculatedColumnFormula 防 #REF!）")
+             f"（{calc_n} 計算欄用純參照防 #REF!）")
 
     # === Data Validation：下拉清單 ===
     for i, col in enumerate(columns, start=1):

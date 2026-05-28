@@ -50,13 +50,13 @@ def run():
         suite.assert_eq(f"欄 {col}14 = {name}", cat,
                         ws[f"{col}14"].value, name)
 
-    # 1.4 K 距今天數公式（=今日-[@最後到驗日]）
+    # 1.4 K 距今天數公式（v2.2 第二版改純參照 J15=最後到驗日）
     k_fml = str(ws["K15"].value or "")
-    suite.assert_true("K15 距今天數 = 今日-[@最後到驗日]", cat,
-                      "今日" in k_fml and "[@最後到驗日]" in k_fml,
+    suite.assert_true("K15 距今天數 = 今日-J15（純參照防 #REF!）", cat,
+                      "今日" in k_fml and "J15" in k_fml and "[@" not in k_fml,
                       detail=k_fml[:80])
 
-    # 1.5 L 是否到驗（v2.2 升級：含 4 種狀態 OR 距今 ≤ 30）
+    # 1.5 L 是否到驗（含 4 種狀態 OR 距今 ≤ 30，純參照）
     l_fml = str(ws["L15"].value or "")
     suite.assert_true("L15 是否到驗包 SUMPRODUCT+SEARCH 多關鍵字", cat,
                       "SUMPRODUCT" in l_fml and "SEARCH" in l_fml,
@@ -64,8 +64,8 @@ def run():
     for keyword in ["已驗", "通緝", "強採", "在監"]:
         suite.assert_true(f"是否到驗公式含 '{keyword}'", cat,
                           keyword in l_fml, detail=l_fml[:80])
-    suite.assert_true("v2.2 升級：是否到驗含 距今 ≤ 30 判斷", cat,
-                      "[@距今天數]" in l_fml and "<=30" in l_fml,
+    suite.assert_true("是否到驗含 距今 ≤ 30 判斷（K15<=30 純參照）", cat,
+                      "K15" in l_fml and "<=30" in l_fml and "[@" not in l_fml,
                       detail=l_fml[:120])
 
     # 1.6 M 狀態燈公式
@@ -74,22 +74,22 @@ def run():
     for keyword in ["未填", "結束", "● 紅", "● 綠", "⚠ 黃"]:
         suite.assert_true(f"狀態燈含 '{keyword}'", cat,
                           keyword in m_fml, detail=m_fml[:80])
-    suite.assert_true("v2.2 升級：狀態燈含 距今 > 30 判紅", cat,
-                      "[@距今天數]" in m_fml and ">30" in m_fml,
+    suite.assert_true("狀態燈含 距今 > 30 判紅（K15>30 純參照）", cat,
+                      "K15" in m_fml and ">30" in m_fml and "[@" not in m_fml,
                       detail=m_fml[:120])
 
-    # 1.7 N 候選旗標：未到驗 OR 距今 > 30（v2.2 升級）
+    # 1.7 N 候選旗標：未到驗 OR 距今 > 30（純參照）
     n_fml = str(ws["N15"].value or "")
-    suite.assert_true("候選旗標 = 未到驗 OR 距今>30", cat,
-                      "未到驗" in n_fml and "[@距今天數]" in n_fml,
+    suite.assert_true("候選旗標 = 未到驗 OR 距今>30（K15 純參照）", cat,
+                      "未到驗" in n_fml and "K15" in n_fml and "[@" not in n_fml,
                       detail=n_fml[:80])
 
-    # 1.8 計算欄使用結構引用 [@...]
-    for col, ref_keyword in [("K", "[@最後到驗日]"), ("L", "[@管制情形]"),
-                             ("M", "[@是否到驗]"), ("N", "[@管制情形]")]:
+    # 1.8 計算欄用純參照（v2.2 第二版防 #REF!，無 [@...] 結構引用）
+    for col, ref_cell in [("K", "J15"), ("L", "H15"),
+                          ("M", "K15"), ("N", "H15")]:
         f = str(ws[f"{col}15"].value or "")
-        suite.assert_true(f"{col}15 用結構引用 {ref_keyword}", cat,
-                          ref_keyword in f, detail=f[:80])
+        suite.assert_true(f"{col}15 用純參照含 {ref_cell}（無 [@]）", cat,
+                          ref_cell in f and "[@" not in f, detail=f[:80])
 
     # 1.8 status cards 公式（row 9）
     expected_cards = {

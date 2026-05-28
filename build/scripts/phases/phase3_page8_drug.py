@@ -98,6 +98,25 @@ DRUG_SAMPLE = [
 CANDIDATE_ROWS = 16
 
 
+def _drug_calc_formulas(r):
+    """v2.2 第二版修：Tbl毒調 計算欄純儲存格參照（防 #REF! 地雷）。
+
+    欄位對應：H=管制情形 J=最後到驗日 K=距今天數 L=是否到驗
+    回傳 (K 距今天數, L 是否到驗, M 狀態燈, N 候選旗標)
+    """
+    K = f'=IFERROR(IF(J{r}="","",今日-J{r}),"")'
+    L = (f'=IFERROR(IF(H{r}="",0,IF(OR('
+         f'SUMPRODUCT(--ISNUMBER(SEARCH({{"已驗","已到驗","通緝","強採","在監"}},H{r})))>0,'
+         f'AND(ISNUMBER(K{r}),K{r}<=30)),1,0)),0)')
+    M = (f'=IFERROR(IF(H{r}="","○ 未填",'
+         f'IF(ISNUMBER(SEARCH("解除",H{r})),"○ 結束",'
+         f'IF(AND(ISNUMBER(K{r}),K{r}>30),"● 紅",'
+         f'IF(L{r}=1,"● 綠","⚠ 黃")))),"")')
+    N = (f'=IFERROR(IF(OR(ISNUMBER(SEARCH("未到驗",H{r})),'
+         f'AND(ISNUMBER(K{r}),K{r}>30)),1,0),0)')
+    return K, L, M, N
+
+
 def build_tbl_drug(wb, log):
     """Part A: 建立 Tbl毒調"""
     ws = wb[DRUG_SHEET]
@@ -139,45 +158,16 @@ def build_tbl_drug(wb, log):
                        align_key="left" if c_idx <= 9 else "center",
                        border_key="all_thin",
                        number_format=fmt if fmt != "general" else None)
-        # K 距今天數：今日 - 最後到驗日（空白則回 ""）
-        f_days = '=IFERROR(IF([@最後到驗日]="","",今日-[@最後到驗日]),"")'
-        S.set_cell(ws, f"K{r_idx}", f_days,
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
-        # L 是否到驗：文字偵測 OR 距今 ≤ 30 日（精確判斷）
-        f_yes = (
-            '=IFERROR(IF([@管制情形]="",0,'
-            'IF(OR('
-            'SUMPRODUCT(--ISNUMBER(SEARCH({"已驗","已到驗","通緝","強採","在監"},[@管制情形])))>0,'
-            'AND(ISNUMBER([@距今天數]),[@距今天數]<=30)'
-            '),1,0)),0)'
-        )
-        S.set_cell(ws, f"L{r_idx}", f_yes,
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
-        # M 狀態燈：升級用 距今天數 30 日判紅
-        f_light = (
-            '=IFERROR(IF([@管制情形]="","○ 未填",'
-            'IF(ISNUMBER(SEARCH("解除",[@管制情形])),"○ 結束",'
-            'IF(AND(ISNUMBER([@距今天數]),[@距今天數]>30),"● 紅",'
-            'IF([@是否到驗]=1,"● 綠","⚠ 黃")))),"")'
-        )
-        S.set_cell(ws, f"M{r_idx}", f_light,
-                   font_key="body", fill_key="calc",
+        # K/L/M/N 計算欄（v2.2 第二版：純參照防 #REF!）
+        fK, fL, fM, fN = _drug_calc_formulas(r_idx)
+        S.set_cell(ws, f"K{r_idx}", fK, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
+        S.set_cell(ws, f"L{r_idx}", fL, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
+        S.set_cell(ws, f"M{r_idx}", fM, font_key="body", fill_key="calc",
                    align_key="center", border_key="all_thin")
-        # N 候選旗標：未到驗 OR 距今 > 30（精確 30 日逾期）
-        f_cand = (
-            '=IFERROR(IF(OR('
-            'ISNUMBER(SEARCH("未到驗",[@管制情形])),'
-            'AND(ISNUMBER([@距今天數]),[@距今天數]>30)'
-            '),1,0),0)'
-        )
-        S.set_cell(ws, f"N{r_idx}", f_cand,
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
+        S.set_cell(ws, f"N{r_idx}", fN, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
         ws.row_dimensions[r_idx].height = S.ROW_HEIGHT["default"]
 
     # === 空白列 (預留容量，v2.2：input cols 1-10 含最後到驗日；calc K-N)===
@@ -191,68 +181,23 @@ def build_tbl_drug(wb, log):
                        align_key="left" if c_idx <= 9 else "center",
                        border_key="all_thin",
                        number_format=fmt if fmt != "general" else None)
-        # K 距今天數
-        S.set_cell(ws, f"K{r_idx}",
-                   '=IFERROR(IF([@最後到驗日]="","",今日-[@最後到驗日]),"")',
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
-        # L 是否到驗（v2.2 升級）
-        S.set_cell(ws, f"L{r_idx}",
-                   '=IFERROR(IF([@管制情形]="",0,'
-                   'IF(OR(SUMPRODUCT(--ISNUMBER(SEARCH('
-                   '{"已驗","已到驗","通緝","強採","在監"},[@管制情形])))>0,'
-                   'AND(ISNUMBER([@距今天數]),[@距今天數]<=30)),1,0)),0)',
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
-        # M 狀態燈
-        S.set_cell(ws, f"M{r_idx}",
-                   '=IFERROR(IF([@管制情形]="","○ 未填",'
-                   'IF(ISNUMBER(SEARCH("解除",[@管制情形])),"○ 結束",'
-                   'IF(AND(ISNUMBER([@距今天數]),[@距今天數]>30),"● 紅",'
-                   'IF([@是否到驗]=1,"● 綠","⚠ 黃")))),"")',
-                   font_key="body", fill_key="calc",
+        # K/L/M/N 計算欄（v2.2 第二版：純參照防 #REF!）
+        fK, fL, fM, fN = _drug_calc_formulas(r_idx)
+        S.set_cell(ws, f"K{r_idx}", fK, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
+        S.set_cell(ws, f"L{r_idx}", fL, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
+        S.set_cell(ws, f"M{r_idx}", fM, font_key="body", fill_key="calc",
                    align_key="center", border_key="all_thin")
-        # N 候選旗標
-        S.set_cell(ws, f"N{r_idx}",
-                   '=IFERROR(IF(OR(ISNUMBER(SEARCH("未到驗",[@管制情形])),'
-                   'AND(ISNUMBER([@距今天數]),[@距今天數]>30)),1,0),0)',
-                   font_key="body", fill_key="calc",
-                   align_key="center", border_key="all_thin",
-                   number_format="integer")
+        S.set_cell(ws, f"N{r_idx}", fN, font_key="body", fill_key="calc",
+                   align_key="center", border_key="all_thin", number_format="integer")
         ws.row_dimensions[r_idx].height = S.ROW_HEIGHT["default"]
 
     # === 註冊 Excel Table ===（v2.2 擴 12→14 欄）
+    # ★ v2.2 第二版修：計算欄改純參照（見 _drug_calc_formulas），
+    #   table 不加 calculatedColumnFormula（會被 Excel 判定不合法移除 table）
     table_ref = f"A{DRUG_HEADER_ROW}:N{DRUG_DATA_END}"
     tbl = Table(displayName=DRUG_TABLE, name=DRUG_TABLE, ref=table_ref)
-
-    # ★★ 防 #REF! 地雷（v2.2 修）：計算欄 K/L/M/N 補 calculatedColumnFormula
-    #    與 build 迴圈寫入的 cell 公式完全一致（[@...] 結構引用）
-    DRUG_CALC_FORMULAS = {
-        "距今天數":
-            'IFERROR(IF([@最後到驗日]="","",今日-[@最後到驗日]),"")',
-        "是否到驗":
-            'IFERROR(IF([@管制情形]="",0,IF(OR(SUMPRODUCT(--ISNUMBER(SEARCH('
-            '{"已驗","已到驗","通緝","強採","在監"},[@管制情形])))>0,'
-            'AND(ISNUMBER([@距今天數]),[@距今天數]<=30)),1,0)),0)',
-        "狀態燈":
-            'IFERROR(IF([@管制情形]="","○ 未填",'
-            'IF(ISNUMBER(SEARCH("解除",[@管制情形])),"○ 結束",'
-            'IF(AND(ISNUMBER([@距今天數]),[@距今天數]>30),"● 紅",'
-            'IF([@是否到驗]=1,"● 綠","⚠ 黃")))),"")',
-        "候選旗標":
-            'IFERROR(IF(OR(ISNUMBER(SEARCH("未到驗",[@管制情形])),'
-            'AND(ISNUMBER([@距今天數]),[@距今天數]>30)),1,0),0)',
-    }
-    tcols = []
-    for i, (h, w, dv, kind, fmt) in enumerate(DRUG_COLUMNS, start=1):
-        tc = TableColumn(id=i, name=h)
-        if h in DRUG_CALC_FORMULAS:
-            tc.calculatedColumnFormula = TableFormula(attr_text=DRUG_CALC_FORMULAS[h])
-        tcols.append(tc)
-    tbl.tableColumns = tcols
-
     tbl.tableStyleInfo = TableStyleInfo(
         name="TableStyleMedium5",
         showFirstColumn=False,
