@@ -27,7 +27,7 @@
       {"name": "是否破獲",     "width": 10, "kind": "calc",     "dv": null,             "format": "general",
        "formula": "=IFERROR(IF(OR([@案件狀況]=\"已破獲未移送\",[@案件狀況]=\"已移送\"),\"是\",\"否\"),\"\")"},
       {"name": "計入發生數",   "width": 12, "kind": "calc",     "dv": null,             "format": "general",
-       "formula": "=IFERROR(IF(OR([@績效類別]<>\"\",[@案件狀況]=\"已移請偵查隊續辦\"),\"否\",\"是\"),\"是\")"},
+       "formula": "=IFERROR(IF([@績效類別]=\"\",\"是\",\"否\"),\"是\")"},
       {"name": "發生管轄",     "width": 12, "kind": "input",    "dv": "發生管轄清單", "format": "general"},
       {"name": "查獲管轄",     "width": 12, "kind": "input",    "dv": "查獲管轄清單", "format": "general"},
       {"name": "承辦人",       "width": 14, "kind": "input",    "dv": "員警姓名清單", "format": "general"},
