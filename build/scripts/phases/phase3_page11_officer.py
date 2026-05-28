@@ -321,8 +321,8 @@ def build_page11_officer(wb, log):
     ws.row_dimensions[16].height = S.ROW_HEIGHT["header"]
 
     # === Row 17 辦案清單 header ===
-    # v2.2 精簡：涉案金額/備註 已移除，改顯示 偵辦進度 / 自填案類
-    list_headers = ["序", "案類", "發生日", "發生地", "破獲日", "案件狀況", "偵辦進度", "自填案類"]
+    # v2.2 精簡：涉案金額/備註移除、偵辦進度併入案件狀況 → 改 發生管轄 / 自填案類
+    list_headers = ["序", "案類", "發生日", "發生地", "破獲日", "案件狀況", "發生管轄", "自填案類"]
     for i, h in enumerate(list_headers, start=1):
         col = get_column_letter(i)
         S.set_cell(ws, f"{col}17", h,
@@ -349,7 +349,7 @@ def build_page11_officer(wb, log):
         ("D", "發生地點", "general"),
         ("E", "破獲時間", "date_roc"),
         ("F", "案件狀況", "general"),
-        ("G", "偵辦進度", "general"),
+        ("G", "發生管轄", "general"),
         ("H", "自填案類", "general"),
     ]
 

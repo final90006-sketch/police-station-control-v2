@@ -193,9 +193,13 @@ def run():
 
     # 5.1 案件資料庫 case sample 包含 4 種案件狀況
     ws5 = wb["案件資料庫"]
+    # 動態取欄位字母（v2.2 欄序會調整，避免寫死）
+    from openpyxl.utils import get_column_letter as _gcl
+    h2c = {ws5[f"{_gcl(c)}14"].value: _gcl(c) for c in range(1, 22)}
+    st_col = h2c.get("案件狀況", "I")
     case_statuses = []
     for r in range(15, 25):
-        v = ws5[f"J{r}"].value
+        v = ws5[f"{st_col}{r}"].value
         if v:
             case_statuses.append(str(v))
     expected_statuses = ["尚未偵破", "已破獲未移送", "已移送"]  # 簽結至少有設計
@@ -203,11 +207,11 @@ def run():
         suite.assert_true(f"sample 含案件狀況「{status}」", cat,
                           any(status in s for s in case_statuses))
 
-    # 5.2 是否破獲 計算欄符合業務規則
-    # 樣本 R15 應該是「否」(尚未偵破), R16/R17/R18 應該是「是」(已破獲/已移送)
-    for r, expected in [(15, "否"), (16, "是"), (17, "是"), (18, "是")]:
-        formula = str(ws5[f"R{r}"].value or "")
-        suite.assert_true(f"R{r} 是否破獲 為公式 IF(...)", cat,
+    # 5.2 是否破獲 計算欄符合業務規則（動態欄位）
+    yes_col = h2c.get("是否破獲", "J")
+    for r in (15, 16, 17, 18):
+        formula = str(ws5[f"{yes_col}{r}"].value or "")
+        suite.assert_true(f"是否破獲 {yes_col}{r} 為公式 IF(...)", cat,
                           formula.startswith("="),
                           detail=formula[:60])
 

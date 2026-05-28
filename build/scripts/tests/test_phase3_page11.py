@@ -113,7 +113,7 @@ def run():
 
     # 1.9 辦案清單 header (row 17) 8 欄
     expected_list = ["序", "案類", "發生日", "發生地", "破獲日",
-                     "案件狀況", "偵辦進度", "自填案類"]
+                     "案件狀況", "發生管轄", "自填案類"]
     for i, h in enumerate(expected_list, start=1):
         col = chr(ord("A") + i - 1)
         suite.assert_eq(f"辦案清單 header {col}17", cat, ws[f"{col}17"].value, h)
