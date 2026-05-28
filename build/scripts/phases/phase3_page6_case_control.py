@@ -163,9 +163,9 @@ def build_page6_case_control(wb, log):
                align_key="left")
     ws.row_dimensions[9].height = S.ROW_HEIGHT["header"]
 
-    # Row 10 header
+    # Row 10 header（v2.2 精簡：備註→自填案類）
     headers = ["編號", "案類", "發生時間", "發生地", "破獲時間",
-               "案件狀況", "偵辦進度", "承辦人", "備註"]
+               "案件狀況", "偵辦進度", "承辦人", "自填案類"]
     for i, h in enumerate(headers, start=1):
         col = get_column_letter(i)
         S.set_cell(ws, f"{col}10", h,
@@ -183,7 +183,7 @@ def build_page6_case_control(wb, log):
         ("F", "案件狀況", "general"),
         ("G", "偵辦進度", "general"),
         ("H", "承辦人", "general"),
-        ("I", "備註", "general"),
+        ("I", "自填案類", "general"),
     ]
     helper_S_range = f"$S${HELPER_START}:$S${HELPER_START+HELPER_LEN-1}"
     helper_U_range = f"$U${HELPER_START}:$U${HELPER_START+HELPER_LEN-1}"

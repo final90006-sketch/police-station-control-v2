@@ -192,12 +192,12 @@ RULES = [
      "severity": "中",
      "link": ("案件資料庫", "R15")},
     {"id": "B6", "cat": "B 資料合理性",
-     "desc": "涉案金額欄全為數字 ≥ 0",
-     "value": (f'=IFERROR(SUMPRODUCT(({CASE_TBL}[涉案金額]<>"")*'
-               f'({CASE_TBL}[涉案金額]<0)),0)'),
+     "desc": "已破獲/已移送案件 應有破獲時間（時效完整性）",
+     "value": (f'=IFERROR(SUMPRODUCT(({CASE_TBL}[是否破獲]="是")*'
+               f'({CASE_TBL}[破獲時間]="")),0)'),
      "light": lambda d: light_count_zero_ok(d),
      "severity": "低",
-     "link": ("案件資料庫", "O15")},
+     "link": ("案件資料庫", "F15")},
     {"id": "B7", "cat": "B 資料合理性",
      "desc": "毒調人口身分證長度 = 10（1 英文字母 + 9 數字）",
      "value": (f'=IFERROR(SUMPRODUCT(({DRUG_TBL}[身分證]<>"")*'

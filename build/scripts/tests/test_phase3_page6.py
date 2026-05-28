@@ -59,7 +59,7 @@ def run():
 
     # Section 1 header row 10 (9 cols)
     expected_headers = ["編號", "案類", "發生時間", "發生地", "破獲時間",
-                        "案件狀況", "偵辦進度", "承辦人", "備註"]
+                        "案件狀況", "偵辦進度", "承辦人", "自填案類"]
     for i, h in enumerate(expected_headers, start=1):
         col = chr(ord("A") + i - 1)
         suite.assert_eq(f"Section 1 header {col}10", cat,
