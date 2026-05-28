@@ -188,8 +188,9 @@ def main():
                     date_fail.append((r, date_col, str(v)))
 
         # --- 3. 發生管轄 + 查獲管轄 正規化 ---
-        # 業務規則（使用者校正）：法院交辦「隊破」=
-        #   發生在本轄（發生管轄=本轄），但偵查隊破的（查獲管轄=他轄）
+        # 業務規則（使用者校正 v2）：法院交辦案 = 本轄發生（發生管轄=本轄）。
+        #   查獲管轄：雖偵查隊給的，但「我們有寫破獲時間就是我們破獲」→
+        #     有破獲時間 → 查獲管轄=本轄；無破獲時間 → 他轄（隊破）。
         jcol = f"{COL['發生管轄']}{r}"
         ccol = f"{COL['查獲管轄']}{r}"
         jv = ws[jcol].value
@@ -198,8 +199,11 @@ def main():
             ws[jcol] = "本轄"          # 法院交辦案 = 本轄發生
             new_catch = ""
             if "隊破" in old or "偵查隊" in old:
-                ws[ccol] = "他轄"      # 偵查隊破 = 別人破，查獲管轄=他轄
-                new_catch = " ｜ 查獲管轄→他轄(偵查隊破)"
+                bv = ws[f"{COL['破獲時間']}{r}"].value
+                has_break = bv is not None and str(bv).strip() != ""
+                ws[ccol] = "本轄" if has_break else "他轄"
+                new_catch = (" ｜ 查獲管轄→本轄(有破獲時間=我們破)" if has_break
+                             else " ｜ 查獲管轄→他轄(無破獲時間=隊破)")
             juris_changes.append((r, old, "本轄" + new_catch))
 
     # --- 4. 計算欄重寫純參照（防 #REF!）---

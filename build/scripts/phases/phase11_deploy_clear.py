@@ -36,9 +36,7 @@ from phases import phase9_native_sparklines
 # ============================================================
 CLEAR_SPECS = [
     # (sheet_name, row_start, row_end, col_start, col_end, description)
-    ("案件資料庫",     15, 18, 1, 13,  "Tbl案件 4 sample（v2.2 精簡 input cols A-M）"),
-    ("案件資料庫",     15, 18, 19, 19, "Tbl案件 績效類別 input（col S）"),
-    ("案件資料庫",     15, 18, 21, 21, "Tbl案件 自填案類 input（col U）"),
+    ("案件資料庫",     15, 18, 1, 21,  "Tbl案件 4 sample（清 input；calc 公式自動跳過）"),
     ("交通取締明細",   15, 19, 1, 6,   "Tbl交通 5 sample（input 全欄 A-F）"),
     ("歷史資料",       11, 15, 1, 14,  "Tbl歷史 5 月快照（input 全欄 A-N）"),
     ("毒品調驗人口管制", 15, 19, 1, 10, "Tbl毒調 5 sample（input cols A-J 含最後到驗日）"),

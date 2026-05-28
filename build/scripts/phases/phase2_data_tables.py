@@ -266,6 +266,65 @@ def _build_one_table(ws, wb, tbl_cfg: dict, log):
     return end_row
 
 
+def _add_case_summary(ws, log):
+    """案件資料庫頂端即時統計（全般 / 竊盜 / 詐欺 × 發生 / 破獲 / 破獲率）。
+
+    使用者建議：列管刑案時隨時掌握數字，不必跳到頁 2。
+    放 rows 6-10（_build_one_table 預留的 spacer 區），本轄當年。
+    """
+    ROC = "(YEAR(今日)-1911)"
+    T = "Tbl案件"
+
+    def occ(cat=None):
+        base = f'COUNTIFS({T}[發生管轄],"本轄",{T}[歸屬年度],{ROC},{T}[計入發生數],"是"'
+        if cat:
+            base = f'COUNTIFS({T}[案類分類],"{cat}",{T}[發生管轄],"本轄",{T}[歸屬年度],{ROC},{T}[計入發生數],"是"'
+        return base + ")"
+
+    def solved(cat=None):
+        base = f'COUNTIFS({T}[查獲管轄],"本轄",{T}[是否破獲],"是",{T}[歸屬年度],{ROC}'
+        if cat:
+            base = f'COUNTIFS({T}[案類分類],"{cat}",{T}[查獲管轄],"本轄",{T}[是否破獲],"是",{T}[歸屬年度],{ROC}'
+        return base + ")"
+
+    # Row 6 title
+    ws.merge_cells("A6:I6")
+    S.set_cell(ws, "A6",
+               '="   📊  即時管制統計（中華民國 "&(YEAR(今日)-1911)&" 年・本轄）'
+               ' ｜ 隨資料即時更新，列管刑案隨時掌握數字"',
+               font_key="section_title", fill_key="banner", align_key="left")
+    ws.row_dimensions[6].height = 28
+
+    # Row 7 header
+    sum_headers = [("A", "案類"), ("B", "發生"), ("C", "破獲"), ("D", "破獲率")]
+    for col, h in sum_headers:
+        S.set_cell(ws, f"{col}7", h, font_key="header", fill_key="header",
+                   align_key="center", border_key="all_thin")
+    ws.row_dimensions[7].height = 24
+
+    # Row 8-10 全般 / 竊盜 / 詐欺
+    cats = [("全般", None, "accent"), ("竊盜", "竊盜", "text"), ("詐欺", "詐欺", "text")]
+    for i, (label, cat, color) in enumerate(cats):
+        r = 8 + i
+        S.set_cell(ws, f"A{r}", label, font_key=S.font(12, bold=True, color=color),
+                   fill_key="accent_light" if cat is None else "calc",
+                   align_key="center", border_key="all_thin")
+        S.set_cell(ws, f"B{r}", f"={occ(cat)}",
+                   font_key=S.font(14, bold=True, color="accent"),
+                   fill_key="calc", align_key="center", border_key="all_thin",
+                   number_format="integer")
+        S.set_cell(ws, f"C{r}", f"={solved(cat)}",
+                   font_key=S.font(14, bold=True, color="pass"),
+                   fill_key="calc", align_key="center", border_key="all_thin",
+                   number_format="integer")
+        S.set_cell(ws, f"D{r}", f"=IFERROR(C{r}/B{r},0)",
+                   font_key=S.font(14, bold=True, color="warn"),
+                   fill_key="calc", align_key="center", border_key="all_thin",
+                   number_format="percent_one")
+        ws.row_dimensions[r].height = 24
+    log.info("  案件資料庫：頂端即時統計（全般/竊盜/詐欺 × 發生/破獲/破獲率）")
+
+
 def build():
     log = get_logger("phase2")
     log.info("===== Phase 2（三大資料表）開始 =====")
@@ -277,6 +336,7 @@ def build():
     p5 = cfg["page5_case_database"]
     ws5 = wb[p5["sheet"]]
     _build_one_table(ws5, wb, p5, log)
+    _add_case_summary(ws5, log)   # v2.2 使用者建議：頂端即時統計
 
     # === 頁 9.5 交通取締明細 ===
     p95 = cfg["page9_5_traffic_detail"]
